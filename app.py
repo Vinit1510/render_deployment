@@ -10,18 +10,20 @@ app = Flask(__name__)
 
 # ==========================================
 # TimeBucks 24/7 Autopilot App for Render / Koyeb
-# High-Frequency Real-Time Live Logging System
+# Web Session & Cookie-Authenticated Automation Engine
 # ==========================================
 
-DEFAULT_COOKIE = "AP_Login=1; AP_Login_E=1; AP_Username=zKSqBFr9o108BH6q46bY3xdtIWnPdyn5CoXcXih3PWENDb5FtYLzjqDRDXuJsHjxoAiO; tb_global_token=4e2b973f630532016d04ff457062ef6e80ea3874ebdd1b69a03f4287a247bae9; tb_signature=22b2b7ac7bb89af7837ed45208f94131017850d29361520a4ab9de33a73d1884; tb_csrf_token=268773"
+DEFAULT_COOKIE = "cf_clearance=L.TRCap.N8zIP0CDzDwvB6VbEiEqF2vzW9s5Y2eo8eE-1785477122-1.2.1.1-MmPeDdyLrBIP_bkpNgCasJof2QBmG21weAUXzMUX02w3Kv4ley3TVsYhEkmg5Nv6liSPDageUik1WPck43kfdARfiFm5iZ3ZCOF2_WeybXVsqnq4mSc5NrcY4Ybu.0q6S4JOeAxJhJfv.wP6ZecML5Cb91evL8HSh2hYin8Rirj_8Z3LEEHcO5cMtBarbO4kEUc6i2FDWRXmxiunIraWMMq_mlR.m.U4TRpqRDB8VHLtIHHlTV45xZQa_m3hYpprytgUO9yn1iQ9CXFfgirxS3dGPIUMYIf9Z90yd_S3LISPGrXEL38nOtAkdWXq9FSKxrOW7OqVM97feF2r8vnCDNN_Wbp0rilLo_tylEhytOYap4yNcp6PqCJNGzoj9CcKLJN0ILiFg7L0xJ6nRJsvguZPJWETrSUIKoKyBS46pavbqHZZoLP25b._PiNpfaJY; AP_Login=1; AP_Login_E=1; AP_Username=zKSqBFr9o108BH6q46bY3xdtIWnPdyn5CoXcXih3PWENDb5FtYLzjqDRDXuJsHjxoAiO; tb_global_token=4e2b973f630532016d04ff457062ef6e80ea3874ebdd1b69a03f4287a247bae9; tb_signature=22b2b7ac7bb89af7837ed45208f94131017850d29361520a4ab9de33a73d1884; tb_csrf_token=268773"
 
 class TimeBucksBot:
     def __init__(self):
         self.session = requests.Session()
         self.session.headers.update({
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "application/json, text/javascript, */*; q=0.01",
-            "X-Requested-With": "XMLHttpRequest"
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Origin": "https://timebucks.com",
+            "Referer": "https://timebucks.com/publishers/index.php?pg=earn&tab=hourly_crown"
         })
         self.is_running = False
         self.logs = []
@@ -29,6 +31,7 @@ class TimeBucksBot:
         self.balance = "$1.246"
         self.streak_status = "Day 2 Checked In ✓"
         self.crown_status = "Precision Snatcher Active 👑"
+        self.csrf_token = "268773"
         self.set_cookies_from_string(os.getenv("TIMEBUCKS_COOKIE", DEFAULT_COOKIE))
 
     def set_cookies_from_string(self, cookie_str):
@@ -37,8 +40,12 @@ class TimeBucksBot:
         for item in cookie_str.split(";"):
             if "=" in item:
                 k, v = item.strip().split("=", 1)
-                self.session.cookies.set(k.strip(), v.strip(), domain="timebucks.com")
-        self.log("Session authentication tokens initialized ✓")
+                k_clean = k.strip()
+                v_clean = v.strip()
+                self.session.cookies.set(k_clean, v_clean, domain="timebucks.com")
+                if k_clean == "tb_csrf_token":
+                    self.csrf_token = v_clean
+        self.log("Full session cookies & Cloudflare clearance tokens loaded ✓")
 
     def log(self, msg):
         ts = datetime.datetime.now().strftime("[%H:%M:%S]")
@@ -61,13 +68,21 @@ class TimeBucksBot:
                 if new_bal != self.balance:
                     self.log(f"🎉 BALANCE UPDATE DETECTED: {self.balance} ➔ {new_bal}")
                 self.balance = new_bal
+
+            csrf_match = re.search(r'name=["\']tb_csrf_token["\']\s+value=["\']([^"\'\s]+)["\']', html_text)
+            if csrf_match:
+                self.csrf_token = csrf_match.group(1)
         except Exception:
             pass
 
     def check_crown_status_api(self):
         try:
             api_url = "https://timebucks.com/redirects/hourly_crown_actions.php?action=GetCrownStatus&includePrize=1"
-            res = self.session.get(api_url, timeout=10)
+            headers = {
+                "X-Requested-With": "XMLHttpRequest",
+                "Accept": "application/json, text/javascript, */*; q=0.01"
+            }
+            res = self.session.get(api_url, headers=headers, timeout=10)
             if res.status_code == 200:
                 data = res.json()
                 if data.get("success"):
@@ -77,14 +92,22 @@ class TimeBucksBot:
                     holder = data.get("crown", {}).get("username", "Unknown")
                     
                     self.crown_status = f"Pool: ${prize} | Round Left: {secs_left}s | Holder: {holder}"
-                    self.log(f"👑 Crown API Check: Pool=${prize} | Holder={holder} | SecsToRoundEnd={secs_left}s | Cooldown={cooldown}s")
+                    self.log(f"👑 Crown API Sync: Pool=${prize} | Holder={holder} | SecsToRoundEnd={secs_left}s | Cooldown={cooldown}s")
 
-                    # Precision Snatch Logic: Trigger when under 10 seconds left
-                    if secs_left <= 10 and cooldown == 0:
-                        self.log(f"⚡ PRECISION SNATCH TRIGGERED at {secs_left}s remaining! 👑")
+                    # Claim Crown execution
+                    if cooldown == 0:
+                        self.log(f"⚡ EXECUTING CROWN CLAIM REQUEST (Cooldown Ready, {secs_left}s left)... 👑")
                         claim_url = "https://timebucks.com/publishers/index.php?pg=earn&tab=hourly_crown"
-                        self.session.post(claim_url, data={"action": "claim_crown"}, timeout=10)
-                        self.log("🏆 Crown Claim POST payload submitted 5s before round end!")
+                        payload = {
+                            "action": "claim_crown",
+                            "tb_csrf_token": self.csrf_token
+                        }
+                        claim_res = self.session.post(claim_url, data=payload, timeout=10)
+                        if claim_res.status_code == 200:
+                            self.extract_live_data(claim_res.text)
+                            self.log("🏆 Crown Claim POST payload successfully submitted with session tokens!")
+                        else:
+                            self.log(f"Claim response status: {claim_res.status_code}")
         except Exception as e:
             self.log(f"Crown API Warning: {e}")
 
@@ -107,19 +130,19 @@ class TimeBucksBot:
                 self.streak_status = "Day 2 Checked In ✓"
                 self.log("Daily Streak: Verified Day 2 Checked In ✓")
             elif "Check In" in res.text:
-                self.session.post(streak_url, data={"action": "check_in"}, timeout=15)
+                self.session.post(streak_url, data={"action": "check_in", "tb_csrf_token": self.csrf_token}, timeout=15)
                 self.log("Daily Streak: Triggered Daily Check-in submission!")
         except Exception as e:
             self.log(f"Streak Warning: {e}")
 
-        # 3. Precision Crown API Check
+        # 3. Precision Crown Check
         self.check_crown_status_api()
 
     def loop(self):
         self.log("🚀 High-Frequency Real-Time Logging Engine Started!")
         while self.is_running:
             self.run_cycle()
-            time.sleep(15) # High-frequency 15-second real-time logging loop
+            time.sleep(15)
 
     def start(self):
         if not self.is_running:
