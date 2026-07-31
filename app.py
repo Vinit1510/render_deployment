@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 # ==========================================
 # TimeBucks 24/7 Autopilot App for Render / Koyeb
-# 4-Second Precision Crown Snatcher Engine
+# Immediate 5-Minute Claim Verification Engine
 # ==========================================
 
 DEFAULT_COOKIE = "cf_clearance=L.TRCap.N8zIP0CDzDwvB6VbEiEqF2vzW9s5Y2eo8eE-1785477122-1.2.1.1-MmPeDdyLrBIP_bkpNgCasJof2QBmG21weAUXzMUX02w3Kv4ley3TVsYhEkmg5Nv6liSPDageUik1WPck43kfdARfiFm5iZ3ZCOF2_WeybXVsqnq4mSc5NrcY4Ybu.0q6S4JOeAxJhJfv.wP6ZecML5Cb91evL8HSh2hYin8Rirj_8Z3LEEHcO5cMtBarbO4kEUc6i2FDWRXmxiunIraWMMq_mlR.m.U4TRpqRDB8VHLtIHHlTV45xZQa_m3hYpprytgUO9yn1iQ9CXFfgirxS3dGPIUMYIf9Z90yd_S3LISPGrXEL38nOtAkdWXq9FSKxrOW7OqVM97feF2r8vnCDNN_Wbp0rilLo_tylEhytOYap4yNcp6PqCJNGzoj9CcKLJN0ILiFg7L0xJ6nRJsvguZPJWETrSUIKoKyBS46pavbqHZZoLP25b._PiNpfaJY; AP_Login=1; AP_Login_E=1; AP_Username=zKSqBFr9o108BH6q46bY3xdtIWnPdyn5CoXcXih3PWENDb5FtYLzjqDRDXuJsHjxoAiO; tb_global_token=4e2b973f630532016d04ff457062ef6e80ea3874ebdd1b69a03f4287a247bae9; tb_signature=22b2b7ac7bb89af7837ed45208f94131017850d29361520a4ab9de33a73d1884; tb_csrf_token=268773"
@@ -30,7 +30,7 @@ class TimeBucksBot:
         self.user_account = "VINIT (ID: 229479070)"
         self.balance = "$1.246"
         self.streak_status = "Day 2 Checked In ✓"
-        self.crown_status = "4-Second Precision Snatcher Active 👑"
+        self.crown_status = "Immediate 5-Min Claim Verification Mode ⚡"
         self.csrf_token = "268773"
         self.set_cookies_from_string(os.getenv("TIMEBUCKS_COOKIE", DEFAULT_COOKIE))
 
@@ -94,9 +94,9 @@ class TimeBucksBot:
                     self.crown_status = f"Pool: ${prize} | Round Left: {secs_left}s | Holder: {holder}"
                     self.log(f"👑 Crown API Check: Pool=${prize} | Holder={holder} | RoundEnd={secs_left}s | Cooldown={cooldown}s")
 
-                    # 4-SECOND PRECISION RULE: Trigger claim 4 seconds before round end
-                    if secs_left <= 4 and cooldown == 0:
-                        self.log(f"⚡ 4-SECOND PRECISION SNATCH TRIGGERED at {secs_left}s remaining! 👑")
+                    # IMMEDIATE VERIFICATION CLAIM: Fire claim every time cooldown reaches 0!
+                    if cooldown == 0:
+                        self.log(f"⚡ IMMEDIATE CLAIM TRIGGERED (Cooldown is 0s ready)! Submitting Claim Crown POST payload... 👑")
                         claim_url = "https://timebucks.com/publishers/index.php?pg=earn&tab=hourly_crown"
                         payload = {
                             "action": "claim_crown",
@@ -105,9 +105,9 @@ class TimeBucksBot:
                         claim_res = self.session.post(claim_url, data=payload, timeout=10)
                         if claim_res.status_code == 200:
                             self.extract_live_data(claim_res.text)
-                            self.log("🏆 Crown Claim POST payload submitted 4s before round end!")
+                            self.log("🏆 Crown Claim POST Payload executed successfully! Check website screen!")
                         else:
-                            self.log(f"Claim response status: {claim_res.status_code}")
+                            self.log(f"Claim response HTTP status: {claim_res.status_code}")
         except Exception as e:
             self.log(f"Crown API Warning: {e}")
 
@@ -117,8 +117,8 @@ class TimeBucksBot:
             self.log("📡 Syncing live account status from TimeBucks...")
             main_res = self.session.get("https://timebucks.com/publishers/index.php?pg=dashboard", timeout=15)
             self.extract_live_data(main_res.text)
-        except Exception as e:
-            self.log(f"Dashboard Sync Warning: {e}")
+        except Exception:
+            pass
 
         # 2. Check Daily Streak
         try:
@@ -127,18 +127,17 @@ class TimeBucksBot:
             self.extract_live_data(res.text)
             if "Checked In" in res.text:
                 self.streak_status = "Day 2 Checked In ✓"
-                self.log("🔥 Daily Streak: Day 2 Checked In ✓")
             elif "Check In" in res.text:
                 self.session.post(streak_url, data={"action": "check_in", "tb_csrf_token": self.csrf_token}, timeout=15)
                 self.log("Daily Streak: Triggered Daily Check-in submission!")
         except Exception as e:
             self.log(f"Streak Warning: {e}")
 
-        # 3. Precision Crown Check
+        # 3. Crown Claim Execution Check
         self.check_crown_status_api()
 
     def loop(self):
-        self.log("🚀 4-Second Precision Snatcher Engine Started!")
+        self.log("🚀 Immediate Claim Verification Engine Started!")
         while self.is_running:
             self.run_cycle()
             time.sleep(15)
@@ -169,7 +168,7 @@ HTML_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>👑 TimeBucks 24/7 Cloud Autopilot <span class="live-tag">4-SEC SNATCH ENGINE</span></h1>
+    <h1>👑 TimeBucks 24/7 Cloud Autopilot <span class="live-tag">IMMEDIATE CLAIM MODE</span></h1>
     <div class="card">
         <h3>Status: <span style="color: #4ade80;">RUNNING 🟢</span></h3>
         <p><strong>Linked Account:</strong> <span style="color: #38bdf8; font-weight: bold;">{{ account }}</span></p>
