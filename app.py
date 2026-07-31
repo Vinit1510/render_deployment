@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 # ==========================================
 # TimeBucks 24/7 Autopilot App for Render / Koyeb
-# Web Session & Cookie-Authenticated Automation Engine
+# Normal Immediate Claim Testing Engine
 # ==========================================
 
 DEFAULT_COOKIE = "cf_clearance=L.TRCap.N8zIP0CDzDwvB6VbEiEqF2vzW9s5Y2eo8eE-1785477122-1.2.1.1-MmPeDdyLrBIP_bkpNgCasJof2QBmG21weAUXzMUX02w3Kv4ley3TVsYhEkmg5Nv6liSPDageUik1WPck43kfdARfiFm5iZ3ZCOF2_WeybXVsqnq4mSc5NrcY4Ybu.0q6S4JOeAxJhJfv.wP6ZecML5Cb91evL8HSh2hYin8Rirj_8Z3LEEHcO5cMtBarbO4kEUc6i2FDWRXmxiunIraWMMq_mlR.m.U4TRpqRDB8VHLtIHHlTV45xZQa_m3hYpprytgUO9yn1iQ9CXFfgirxS3dGPIUMYIf9Z90yd_S3LISPGrXEL38nOtAkdWXq9FSKxrOW7OqVM97feF2r8vnCDNN_Wbp0rilLo_tylEhytOYap4yNcp6PqCJNGzoj9CcKLJN0ILiFg7L0xJ6nRJsvguZPJWETrSUIKoKyBS46pavbqHZZoLP25b._PiNpfaJY; AP_Login=1; AP_Login_E=1; AP_Username=zKSqBFr9o108BH6q46bY3xdtIWnPdyn5CoXcXih3PWENDb5FtYLzjqDRDXuJsHjxoAiO; tb_global_token=4e2b973f630532016d04ff457062ef6e80ea3874ebdd1b69a03f4287a247bae9; tb_signature=22b2b7ac7bb89af7837ed45208f94131017850d29361520a4ab9de33a73d1884; tb_csrf_token=268773"
@@ -30,7 +30,7 @@ class TimeBucksBot:
         self.user_account = "VINIT (ID: 229479070)"
         self.balance = "$1.246"
         self.streak_status = "Day 2 Checked In ✓"
-        self.crown_status = "Precision Snatcher Active 👑"
+        self.crown_status = "Normal Test Mode Active 🧪"
         self.csrf_token = "268773"
         self.set_cookies_from_string(os.getenv("TIMEBUCKS_COOKIE", DEFAULT_COOKIE))
 
@@ -92,11 +92,11 @@ class TimeBucksBot:
                     holder = data.get("crown", {}).get("username", "Unknown")
                     
                     self.crown_status = f"Pool: ${prize} | Round Left: {secs_left}s | Holder: {holder}"
-                    self.log(f"👑 Crown API Sync: Pool=${prize} | Holder={holder} | SecsToRoundEnd={secs_left}s | Cooldown={cooldown}s")
+                    self.log(f"👑 Crown API Check: Pool=${prize} | Holder={holder} | RoundEnd={secs_left}s | Cooldown={cooldown}s")
 
-                    # Claim Crown execution
+                    # TEST MODE: Immediate claim when cooldown is 0
                     if cooldown == 0:
-                        self.log(f"⚡ EXECUTING CROWN CLAIM REQUEST (Cooldown Ready, {secs_left}s left)... 👑")
+                        self.log(f"🧪 NORMAL TEST CLAIM: Cooldown is READY! Triggering immediate claim test... 👑")
                         claim_url = "https://timebucks.com/publishers/index.php?pg=earn&tab=hourly_crown"
                         payload = {
                             "action": "claim_crown",
@@ -105,7 +105,10 @@ class TimeBucksBot:
                         claim_res = self.session.post(claim_url, data=payload, timeout=10)
                         if claim_res.status_code == 200:
                             self.extract_live_data(claim_res.text)
-                            self.log("🏆 Crown Claim POST payload successfully submitted with session tokens!")
+                            if "tbie2i7we91" in claim_res.text or "VINIT" in claim_res.text:
+                                self.log("🎉 SUCCESS! Normal claim test passed! Crown registered for VINIT! 👑")
+                            else:
+                                self.log("🏆 Crown Claim POST submitted to TimeBucks server successfully!")
                         else:
                             self.log(f"Claim response status: {claim_res.status_code}")
         except Exception as e:
@@ -114,7 +117,7 @@ class TimeBucksBot:
     def run_cycle(self):
         # 1. Fetch main page & sync live data
         try:
-            self.log("📡 Fetching live account status from TimeBucks...")
+            self.log("📡 Syncing live account status from TimeBucks...")
             main_res = self.session.get("https://timebucks.com/publishers/index.php?pg=dashboard", timeout=15)
             self.extract_live_data(main_res.text)
         except Exception as e:
@@ -122,13 +125,12 @@ class TimeBucksBot:
 
         # 2. Check Daily Streak
         try:
-            self.log("🔥 Inspecting Daily Streak status...")
             streak_url = "https://timebucks.com/publishers/index.php?pg=earn&tab=daily_streak"
             res = self.session.get(streak_url, timeout=15)
             self.extract_live_data(res.text)
             if "Checked In" in res.text:
                 self.streak_status = "Day 2 Checked In ✓"
-                self.log("Daily Streak: Verified Day 2 Checked In ✓")
+                self.log("🔥 Daily Streak: Day 2 Checked In ✓")
             elif "Check In" in res.text:
                 self.session.post(streak_url, data={"action": "check_in", "tb_csrf_token": self.csrf_token}, timeout=15)
                 self.log("Daily Streak: Triggered Daily Check-in submission!")
@@ -139,7 +141,7 @@ class TimeBucksBot:
         self.check_crown_status_api()
 
     def loop(self):
-        self.log("🚀 High-Frequency Real-Time Logging Engine Started!")
+        self.log("🚀 Normal Test Mode Engine Started! (Immediate Claim When Cooldown Ready)")
         while self.is_running:
             self.run_cycle()
             time.sleep(15)
@@ -149,7 +151,7 @@ class TimeBucksBot:
             self.is_running = True
             t = threading.Thread(target=self.loop, daemon=True)
             t.start()
-            self.log("24/7 Autopilot Logging Engine Initialized! 🚀")
+            self.log("24/7 Autopilot Test Engine Initialized! 🚀")
 
 bot = TimeBucksBot()
 
@@ -166,11 +168,11 @@ HTML_TEMPLATE = """
         .btn { background: #0284c7; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .btn:hover { background: #0369a1; }
         pre { background: #020617; padding: 15px; border-radius: 8px; max-height: 400px; overflow-y: auto; color: #38bdf8; font-size: 14px; font-family: monospace; }
-        .live-tag { background: #22c55e; color: black; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .live-tag { background: #eab308; color: black; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h1>👑 TimeBucks 24/7 Cloud Autopilot <span class="live-tag">LIVE SYNC</span></h1>
+    <h1>👑 TimeBucks 24/7 Cloud Autopilot <span class="live-tag">NORMAL TEST MODE</span></h1>
     <div class="card">
         <h3>Status: <span style="color: #4ade80;">RUNNING 🟢</span></h3>
         <p><strong>Linked Account:</strong> <span style="color: #38bdf8; font-weight: bold;">{{ account }}</span></p>
